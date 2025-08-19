@@ -63,4 +63,40 @@
             this.to = to;
         }
     }
+
+    /// <summary>
+    /// 左神的简单并查集
+    /// </summary>
+    public class MySets
+    {
+        public Dictionary<Node, List<Node>> setMap;
+        public MySets(List<Node> nodes)
+        {
+            setMap = new Dictionary<Node, List<Node>>();
+            foreach (var node in nodes)
+            {
+                List<Node> set = new List<Node>(){ node };
+                setMap.Add(node, set);
+            }
+        }
+        public bool isSameSet(Node from, Node to)
+        {
+            if (setMap[from] == setMap[to])
+            {
+                return true;
+            }
+            return false;
+        }
+        public void Union(Node from, Node to)
+        {
+            List<Node> fromSet = setMap[from];
+            List<Node> toSet = setMap[to];
+            // 全部添加到 fromSet中   并且修改toSet中的节点的setMap
+            foreach (var node in toSet)
+            {
+                fromSet.Add(node);
+                setMap[node] = fromSet;
+            }                     
+        }
+    }
 }

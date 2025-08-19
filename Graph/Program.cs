@@ -44,9 +44,33 @@ graph.edges.Add(edge3_4);
 
 //graph.RemoveNode(2);
 
-foreach (var node in SortedTopology(graph))
+foreach (var node in SortedTopology2(graph))
 {
     Console.WriteLine(node.value);
+}
+static HashSet<Edge> KruskalMST(Graph graph)
+{
+    HashSet<Edge> result = new HashSet<Edge>();
+    MySets mySets = new MySets(graph.nodes.Values.ToList<Node>());
+
+    List<Edge> edges = graph.edges.ToList<Edge>();
+    // 排序
+    edges.Sort((a, b) =>
+    {
+        if (a.weight < b.weight)
+            return -1;
+        return 1;
+    });
+
+    foreach (var edge in edges)
+    {
+        if (!mySets.isSameSet(edge.from, edge.to))
+        {
+            result.Add(edge);
+            mySets.Union(edge.from, edge.to);   
+        }
+    }
+    return result;   
 }
 static List<Node> SortedTopology(Graph graph)
 {
@@ -71,6 +95,35 @@ static List<Node> SortedTopology(Graph graph)
     }
     return result;
     
+}
+static List<Node> SortedTopology2(Graph graph)
+{
+    // 左神的写法
+    Dictionary<Node, int> inDic = new Dictionary<Node, int>();
+    Queue<Node> zeroInQueue = new Queue<Node>();
+
+    foreach (var node in graph.nodes.Values)
+    {
+        inDic.Add(node, node._in);
+        if(node._in == 0)
+            zeroInQueue.Enqueue(node);
+    }
+
+    List<Node> result = new List<Node>();
+    while(zeroInQueue.Count != 0)
+    {
+        Node cur = zeroInQueue.Dequeue();
+        result.Add(cur);
+        foreach (var node in cur.nexts)
+        {
+            inDic[node]--;
+            if(inDic[node] == 0)
+            {
+                zeroInQueue.Enqueue(node);
+            }
+        }
+    }
+    return result;
 }
 static void BFS(Node node)
 {
