@@ -1,4 +1,5 @@
 ﻿using MyGraph;
+using System.Collections.Generic;
 
 
 
@@ -48,11 +49,79 @@ foreach (var node in SortedTopology2(graph))
 {
     Console.WriteLine(node.value);
 }
+static int MinCostConnectPoints(int[][] points)
+{
+    return 0;
+}
+static Dictionary<Node, int> Dijkstra(Node head)
+{
+    Dictionary<Node, int> distanceDic = new Dictionary<Node, int>();
+    distanceDic.Add(head, 0);
+
+    HashSet<Node> selectedNodes = new HashSet<Node>();      // 已经被利用完的节点
+    Node cur = GetMinDistanceAndUnselectedNode(distanceDic, selectedNodes);
+    foreach (var edge in cur.edges)
+    {
+        if(!distanceDic.ContainsKey(edge.to))
+        {
+            distanceDic.Add(edge.to, int.MaxValue);
+        }
+
+        if(edge.weight + distanceDic[edge.from] < distanceDic[edge.to])
+        {
+            distanceDic[edge.to] = edge.weight;
+        }
+        selectedNodes.Add(edge.from);
+    }
+}
+static Node GetMinDistanceAndUnselectedNode(Dictionary<Node, int> dict, HashSet<Node> set)
+{
+
+}
+static HashSet<Edge> PrimMST(Graph graph)
+{
+    // 最小生成树   prim算法
+
+    HashSet<Edge> result = new HashSet<Edge>();
+    HashSet<Node> visited = new HashSet<Node>();                                //已经经过的节点
+    PriorityQueue<Edge, int> priorityQueue = new PriorityQueue<Edge, int>();    // 待选择的边
+
+    foreach (var node in graph.nodes.Values)        // 这里的for循环是因为图可能不连通  那么每个子图都有一个最小生成树
+                                                    // 如果说了连通的那么就不用循环
+    {
+        if (!visited.Contains(node))
+        {
+            visited.Add(node);
+            foreach (var edge in node.edges)
+            {
+                priorityQueue.Enqueue(edge, edge.weight);
+            }
+            while (priorityQueue.Count != 0)
+            {
+                Edge edge = priorityQueue.Dequeue();
+                Node toNode = edge.to;
+                if (!visited.Contains(toNode))
+                {
+                    visited.Add(toNode);
+                    result.Add(edge);
+                    foreach (var nextEdge in toNode.edges)              // 这里会重复地把一些边加入到队列中 但是不影响结果
+                                                                        // 因为节点重复了还是会不要的
+                    {
+                        priorityQueue.Enqueue(nextEdge, nextEdge.weight);
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
 static HashSet<Edge> KruskalMST(Graph graph)
 {
+    // 最小生成树   kruskal算法
     HashSet<Edge> result = new HashSet<Edge>();
     MySets mySets = new MySets(graph.nodes.Values.ToList<Node>());
-
+    
+    // 这里用优先级队列应该会更好
     List<Edge> edges = graph.edges.ToList<Edge>();
     // 排序
     edges.Sort((a, b) =>
