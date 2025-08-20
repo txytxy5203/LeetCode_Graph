@@ -1,5 +1,6 @@
 ﻿using MyGraph;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 
 
@@ -45,9 +46,9 @@ graph.edges.Add(edge3_4);
 
 //graph.RemoveNode(2);
 
-foreach (var node in SortedTopology2(graph))
+foreach (var node in Dijkstra(node1))
 {
-    Console.WriteLine(node.value);
+    Console.WriteLine(node.Key.value     + "  " + node.Value);
 }
 static int MinCostConnectPoints(int[][] points)
 {
@@ -55,28 +56,45 @@ static int MinCostConnectPoints(int[][] points)
 }
 static Dictionary<Node, int> Dijkstra(Node head)
 {
-    Dictionary<Node, int> distanceDic = new Dictionary<Node, int>();
+    Dictionary<Node, int> distanceDic = new Dictionary<Node, int>();        // 从head到其他节点的距离
     distanceDic.Add(head, 0);
 
     HashSet<Node> selectedNodes = new HashSet<Node>();      // 已经被利用完的节点
     Node cur = GetMinDistanceAndUnselectedNode(distanceDic, selectedNodes);
-    foreach (var edge in cur.edges)
+    while (cur != null)
     {
-        if(!distanceDic.ContainsKey(edge.to))
+        foreach (var edge in cur.edges)
         {
-            distanceDic.Add(edge.to, int.MaxValue);
-        }
+            if (!distanceDic.ContainsKey(edge.to))
+            {
+                distanceDic.Add(edge.to, int.MaxValue);
+            }
 
-        if(edge.weight + distanceDic[edge.from] < distanceDic[edge.to])
-        {
-            distanceDic[edge.to] = edge.weight;
+            if (edge.weight + distanceDic[edge.from] < distanceDic[edge.to])
+            {
+                distanceDic[edge.to] = edge.weight + distanceDic[edge.from];
+            }
         }
-        selectedNodes.Add(edge.from);
-    }
+        selectedNodes.Add(cur);         // 利用完cur节点的所有边后   就加入set中
+        cur = GetMinDistanceAndUnselectedNode(distanceDic, selectedNodes);  
+    } 
+    return distanceDic;
 }
 static Node GetMinDistanceAndUnselectedNode(Dictionary<Node, int> dict, HashSet<Node> set)
 {
-
+    Node result = null;
+    int min = int.MaxValue;
+    foreach (var node in dict.Keys)
+    {
+        if (set.Contains(node)) 
+            continue;
+        if (dict[node] < min)
+        {
+            result = node;
+            min = dict[node];
+        }
+    }
+    return result;
 }
 static HashSet<Edge> PrimMST(Graph graph)
 {
