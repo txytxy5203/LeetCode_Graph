@@ -1,76 +1,123 @@
 ﻿using MyGraph;
 using System.Collections.Generic;
+using System.Runtime.Versioning;
 using System.Text.Json.Serialization;
 
 
 
-Graph graph = new Graph();
-Node node1 = new Node(1);
-Node node2 = new Node(2);
-Node node3 = new Node(3);
-Node node4 = new Node(4);
+//Graph graph = new Graph();
+//Node node1 = new Node(1);
+//Node node2 = new Node(2);
+//Node node3 = new Node(3);
+//Node node4 = new Node(4);
 
-Edge edge1_2 = new Edge(1, node1, node2);
-Edge edge1_3 = new Edge(1, node1, node3);
-Edge edge2_3 = new Edge(1, node2, node3);
-Edge edge2_4 = new Edge(1, node2, node4);
-Edge edge3_4 = new Edge(1, node3, node4);
+//Edge edge1_2 = new Edge(1, node1, node2);
+//Edge edge1_3 = new Edge(1, node1, node3);
+//Edge edge2_3 = new Edge(1, node2, node3);
+//Edge edge2_4 = new Edge(1, node2, node4);
+//Edge edge3_4 = new Edge(1, node3, node4);
 
-node1._in = 0; node1._out = 2;
-node2._in = 1; node2._out = 2;
-node3._in = 2; node3._out = 1;
-node4._in = 2; node4._out = 0;
+//node1._in = 0; node1._out = 2;
+//node2._in = 1; node2._out = 2;
+//node3._in = 2; node3._out = 1;
+//node4._in = 2; node4._out = 0;
 
-node1.nexts.Add(node2);
-node1.nexts.Add(node3);
-node2.nexts.Add(node3);
-node2.nexts.Add(node4);
-node3.nexts.Add(node4);
+//node1.nexts.Add(node2);
+//node1.nexts.Add(node3);
+//node2.nexts.Add(node3);
+//node2.nexts.Add(node4);
+//node3.nexts.Add(node4);
 
-node1.edges.Add(edge1_2);
-node1.edges.Add(edge1_3);
-node2.edges.Add(edge2_3);
-node2.edges.Add(edge2_4);
-node3.edges.Add(edge3_4);
+//node1.edges.Add(edge1_2);
+//node1.edges.Add(edge1_3);
+//node2.edges.Add(edge2_3);
+//node2.edges.Add(edge2_4);
+//node3.edges.Add(edge3_4);
 
-graph.nodes.Add(1, node1);
-graph.nodes.Add(2, node2);
-graph.nodes.Add(3, node3);
-graph.nodes.Add(4, node4);
+//graph.nodes.Add(1, node1);
+//graph.nodes.Add(2, node2);
+//graph.nodes.Add(3, node3);
+//graph.nodes.Add(4, node4);
 
-graph.edges.Add(edge1_2);
-graph.edges.Add(edge1_3);
-graph.edges.Add(edge2_3);
-graph.edges.Add(edge2_4);
-graph.edges.Add(edge3_4);
+//graph.edges.Add(edge1_2);
+//graph.edges.Add(edge1_3);
+//graph.edges.Add(edge2_3);
+//graph.edges.Add(edge2_4);
+//graph.edges.Add(edge3_4);
 
 //graph.RemoveNode(2);
 
-foreach (var node in Dijkstra(node1))
-{
-    Console.WriteLine(node.Key.value     + "  " + node.Value);
-}
+// 注意这里是交错数组还不是二维数组
+int[][] times = { new int[]{ 2, 1, 1 }, 
+                new int[] { 2, 3, 1 },
+                new int[] { 3, 4, 1 } };
+int n = 4;
+int k = 2;
+Console.WriteLine(NetworkDelayTime(times, n, k));
+
 static int MinCostConnectPoints(int[][] points)
 {
     return 0;
 }
+static int NetworkDelayTime(int[][] times, int n, int k)
+{
+    // https://leetcode.cn/problems/network-delay-time/description/?envType=problem-list-v2&envId=vzsxaVPG
+    // 先生成一个图
+    Graph graph = new Graph();
+    for (int i = 0; i < times.GetLength(0); i++)
+    {
+        Node from = null;
+        Node to = null;
+
+        // 一定要先判断节点是否已经在graph里面了
+        if (!graph.nodes.ContainsKey(times[i][0]))
+            from = new Node(times[i][0]);
+        else
+            from = graph.nodes[times[i][0]];
+        if (!graph.nodes.ContainsKey(times[i][1]))
+            to = new Node(times[i][1]);
+        else
+            to = graph.nodes[times[i][1]];
+        // 边直接new
+        Edge edge = new Edge(times[i][2], from, to);
+
+
+        from._out++;
+        from.nexts.Add(to);
+        from.edges.Add(edge);
+        to._in++;
+
+        if (!graph.nodes.ContainsKey(times[i][0]))
+            graph.nodes.Add(times[i][0], from);
+        if (!graph.nodes.ContainsKey(times[i][1]))
+            graph.nodes.Add(times[i][1], to);
+        graph.edges.Add(edge);
+    }
+
+    Dictionary<Node, int> dic = Dijkstra(graph.nodes[k]);
+
+    if (dic.Count != n)
+        return -1;
+    return dic.Values.Max();
+}
 static Dictionary<Node, int> Dijkstra(Node head)
 {
+    // 左神还有一个堆优化的版本在高级班
     Dictionary<Node, int> distanceDic = new Dictionary<Node, int>();        // 从head到其他节点的距离
     distanceDic.Add(head, 0);
 
     HashSet<Node> selectedNodes = new HashSet<Node>();      // 已经被利用完的节点
-    Node cur = GetMinDistanceAndUnselectedNode(distanceDic, selectedNodes);
+    Node cur = GetMinDistanceAndUnselectedNode(distanceDic, selectedNodes);     // 在distanceDic中选一个value最小的  且不在selectedNodes中
     while (cur != null)
     {
         foreach (var edge in cur.edges)
         {
             if (!distanceDic.ContainsKey(edge.to))
             {
-                distanceDic.Add(edge.to, int.MaxValue);
+                distanceDic.Add(edge.to, int.MaxValue);      // dic中没有这个节点那就直接赋一个无穷大
             }
 
-            if (edge.weight + distanceDic[edge.from] < distanceDic[edge.to])
+            if (edge.weight + distanceDic[edge.from] < distanceDic[edge.to])    // 看看能否更新距离
             {
                 distanceDic[edge.to] = edge.weight + distanceDic[edge.from];
             }
