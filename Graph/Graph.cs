@@ -26,6 +26,45 @@
             }
             nodes.Remove(id);
         }
+        /// <summary>
+        /// 对外提供一个二维数组转Graph的方法
+        /// </summary>
+        /// <param name="array">[from, to ,weight]</param>
+        /// <returns></returns>
+        public static Graph ArrayToGraph(int[][] array)
+        {
+            Graph graph = new Graph();
+            for (int i = 0; i < array.GetLength(0); i++)
+            {
+                Node from = null;
+                Node to = null;
+
+                // 一定要先判断节点是否已经在graph里面了
+                if (!graph.nodes.ContainsKey(array[i][0]))
+                    from = new Node(array[i][0]);
+                else
+                    from = graph.nodes[array[i][0]];
+                if (!graph.nodes.ContainsKey(array[i][1]))
+                    to = new Node(array[i][1]);
+                else
+                    to = graph.nodes[array[i][1]];
+                // 边直接new
+                Edge edge = new Edge(array[i][2], from, to);
+
+
+                from._out++;
+                from.nexts.Add(to);
+                from.edges.Add(edge);
+                to._in++;
+
+                if (!graph.nodes.ContainsKey(array[i][0]))
+                    graph.nodes.Add(array[i][0], from);
+                if (!graph.nodes.ContainsKey(array[i][1]))
+                    graph.nodes.Add(array[i][1], to);
+                graph.edges.Add(edge);
+            }
+            return graph;
+        }
     }
     public class Node
     {
@@ -99,4 +138,5 @@
             }                     
         }
     }
+
 }

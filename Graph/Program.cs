@@ -48,51 +48,68 @@ using System.Text.Json.Serialization;
 //graph.RemoveNode(2);
 
 // 注意这里是交错数组还不是二维数组
-int[][] times = { new int[]{ 2, 1, 1 }, 
-                new int[] { 2, 3, 1 },
-                new int[] { 3, 4, 1 } };
+//int[][] times = { new int[]{ 0, 1, 100 }, 
+//                new int[] { 1, 2, 100 },
+//                new int[] { 2, 0, 100 },
+//                new int[] { 1, 3, 600},
+//                new int[] { 2, 3, 200} };
+//int n = 4;
+//int k = 1;
+//int src = 0;
+//int dst = 3;
+int[][] times = { new int[] { 2,1,1},
+                  new int[]{ 2,3,1},
+                new int[]{ 3,4,1} };
 int n = 4;
 int k = 2;
-Console.WriteLine(NetworkDelayTime(times, n, k));
+Console.WriteLine(NetworkDelayTime3(times, n, k));
 
-static int MinCostConnectPoints(int[][] points)
+
+static int FindCheapestPrice(int n, int[][] flights, int src, int dst, int k)
 {
-    return 0;
+    // 这个思路不行
+    // https://leetcode.cn/problems/cheapest-flights-within-k-stops/description/?envType=problem-list-v2&envId=vzsxaVPG
+    Graph graph = Graph.ArrayToGraph(flights);
+    Dictionary<Node, int> dic = FindCheapestPriceDijkstra(graph.nodes[src], k);
+
+    if(dic.ContainsKey(graph.nodes[dst]))
+    {
+        return dic[graph.nodes[dst]];
+    }
+    return -1;
+}
+static Dictionary<Node, int> FindCheapestPriceDijkstra(Node head, int k)
+{
+    Dictionary<Node, int> distanceDic = new Dictionary<Node, int>();        // 从head到其他节点的距离
+    distanceDic.Add(head, 0);
+
+    HashSet<Node> selectedNodes = new HashSet<Node>();      // 已经被利用完的节点
+    Node cur = GetMinDistanceAndUnselectedNode(distanceDic, selectedNodes);     // 在distanceDic中选一个value最小的  且不在selectedNodes中
+    while (cur != null)
+    {
+        foreach (var edge in cur.edges)
+        {
+            if (!distanceDic.ContainsKey(edge.to))
+            {
+                distanceDic.Add(edge.to, int.MaxValue);      // dic中没有这个节点那就直接赋一个无穷大
+            }
+
+            if ((edge.weight + distanceDic[edge.from] < distanceDic[edge.to]) && (selectedNodes.Count < k + 1))    // 看看能否更新距离
+            {
+                distanceDic[edge.to] = edge.weight + distanceDic[edge.from];
+            }
+        }
+        selectedNodes.Add(cur);         // 利用完cur节点的所有边后   就加入set中
+        cur = GetMinDistanceAndUnselectedNode(distanceDic, selectedNodes);
+    }
+    return distanceDic;
 }
 static int NetworkDelayTime(int[][] times, int n, int k)
 {
     // https://leetcode.cn/problems/network-delay-time/description/?envType=problem-list-v2&envId=vzsxaVPG
+    // 图的题目我都是用左神的框架写的  下次记得练一下二维数组框架下的Coding
     // 先生成一个图
-    Graph graph = new Graph();
-    for (int i = 0; i < times.GetLength(0); i++)
-    {
-        Node from = null;
-        Node to = null;
-
-        // 一定要先判断节点是否已经在graph里面了
-        if (!graph.nodes.ContainsKey(times[i][0]))
-            from = new Node(times[i][0]);
-        else
-            from = graph.nodes[times[i][0]];
-        if (!graph.nodes.ContainsKey(times[i][1]))
-            to = new Node(times[i][1]);
-        else
-            to = graph.nodes[times[i][1]];
-        // 边直接new
-        Edge edge = new Edge(times[i][2], from, to);
-
-
-        from._out++;
-        from.nexts.Add(to);
-        from.edges.Add(edge);
-        to._in++;
-
-        if (!graph.nodes.ContainsKey(times[i][0]))
-            graph.nodes.Add(times[i][0], from);
-        if (!graph.nodes.ContainsKey(times[i][1]))
-            graph.nodes.Add(times[i][1], to);
-        graph.edges.Add(edge);
-    }
+    Graph graph = Graph.ArrayToGraph(times);
 
     Dictionary<Node, int> dic = Dijkstra(graph.nodes[k]);
 
@@ -142,6 +159,98 @@ static Node GetMinDistanceAndUnselectedNode(Dictionary<Node, int> dict, HashSet<
         }
     }
     return result;
+}
+static int NetworkDelayTime2(int[][] times, int n, int k)
+{
+    // 使用Floyd算法  直接使用邻接矩阵
+    int[,] w = new int[n,n];
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            w[i, j] = i == j ? 0 : int.MaxValue >> 1;
+        }
+    }
+    for(int i = 0; i < times.GetLength(0); i++)     // 题目给的路径全部写进去
+    {
+        w[times[i][0] - 1, times[i][1] - 1] = times[i][2];
+    }
+    Floyd(w);
+
+    int result = 0;
+    for (int i = 0; i < n; i++)
+    {
+        result = Math.Max(w[k - 1, i], result);
+    }
+    return result >= int.MaxValue >> 1 ? -1 : result;
+}
+static void Floyd(int[,] w)
+{
+    // Floyd算法  邻接矩阵实现
+    // 三层循环嵌套   中间-起始-终点
+    int n = w.GetLength(0);
+    for(int p = 0; p < n; p++)
+    {
+        for(int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                w[i, j] = Math.Min(w[i,j], w[i,p] + w[p,j]);
+            }
+        }
+    }
+}
+static int NetworkDelayTime3(int[][] times, int n, int k)
+{
+    // 邻接矩阵实现Dijkstra算法
+    int[,] w = new int[n, n];
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            w[i, j] = i == j ? 0 : int.MaxValue;
+        }
+    }
+    for (int i = 0; i < times.GetLength(0); i++)     // 题目给的路径全部写进去
+    {
+        w[times[i][0] - 1, times[i][1] - 1] = times[i][2];
+    }
+
+
+    int[] result = new int[n];
+    Array.Fill(result, int.MaxValue >> 1);
+    result[k - 1] = 0;
+    bool[] isLocked = new bool[n];
+    Array.Fill(isLocked, false);
+
+    int curr = GetMinDistanceAndUnselectedInt(result, isLocked);
+    while(curr != -1)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            int distance = w[curr, i] + result[curr];
+            if (distance < result[i])
+            {
+                result[curr] = distance;
+            }
+        }
+        isLocked[curr] = true;
+        curr = GetMinDistanceAndUnselectedInt(result, isLocked);
+    }
+
+    int max = result.Max();
+    return max >= int.MaxValue >> 1 ? -1 : max;
+
+}
+static int GetMinDistanceAndUnselectedInt(int[] result, bool[] isLocked)
+{
+    int curr = int.MaxValue;
+    for (int i = 0; i < result.Length; i++)
+    {
+        if (isLocked[i]) continue;
+        curr = Math.Min(curr, result[i]);
+    }
+    return curr == int.MaxValue ? -1 : curr;
 }
 static HashSet<Edge> PrimMST(Graph graph)
 {
